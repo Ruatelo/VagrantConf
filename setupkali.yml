@@ -1,0 +1,58 @@
+- name: kali config
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: install tools
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:
+        - tmux # enables a number of terminals (or windows) to be accessed and controlled from a single terminal
+        - gobuster # tool used to brute-force URIs including directories and files as well as DNS subdomains
+        - nuclei # fast, template based vulnerability scanner focusing on extensive configurability, massive extensibility and ease of use
+        - dirsearch # command-line tool designed to brute force directories and files in webservers
+        - nishang # framework and collection of scripts and payloads which enables usage of PowerShell for offensive security and post exploitation
+        - seclists # collection of multiple types of lists used during security assessments
+      become: true
+    - block:
+        - name: create tools directory
+          file:
+            state: directory
+            path: /opt/tools
+            owner: vagrant
+            group: vagrant
+            mode: 0755
+      become: true
+    - block:
+        - name: create BloodhoudCE directory
+          file:
+            state: directory
+            path: /opt/tools/BloodhoundCE
+          register: BloodhoundCE
+
+        - name: download and save Bloodhound docker yaml file with curl
+          get_url:
+            url: https://ghst.ly/getbhce
+            dest: /opt/tools/BloodhoundCE/docker-compose.yml
+
+        - name: download SharpCollection with git
+          git:
+            repo: https://github.com/Flangvik/SharpCollection.git
+            dest: /opt/tools/SharpCollection
+
+      become: true
+      become_user: vagrant
+
+    - block:
+        - name: Clone latest impacket
+          git:
+            repo: https://github.com/fortra/impacket.git
+            dest: /opt/tools/impacket
+
+        - name: Install impacket
+          command: python3 setup.py install
+          args:
+            chdir: /opt/tools/impacket
+          become: true
